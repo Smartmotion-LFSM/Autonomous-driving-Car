@@ -2,275 +2,326 @@ import time
 import RPi.GPIO as GPIO
 import cv2
 
-#Variable zum Messen der Zeit
+# GPIO-Pins für Servomotor, Farbsensor und Ultraschallsensor
+SERVO_PIN = 13
+COLOR_SENSOR_PINS = {
+    'S0': 17,
+    'S1': 27,
+    'S2': 22,
+    'S3': 23,
+    'OUT': 24
+}
+ULTRASONIC_TRIGGER_PIN = 26
+ULTRASONIC_ECHO_PIN = 19
+RELAY_PIN = 18
 
-timeForSteering = 0
+# Farbfilterfrequenzen
+COLOR_FREQUENCIES = {
+    0: (False, False),
+    1: (False, True),
+    2: (True, False),
+    3: (True, True)
+}
 
-# Ab Hier wird der Servomotor programmiert
+# Farbbereiche für Rot und Grün im HSV-Farbraum
+LOWER_RED = (0, 100, 100)
+UPPER_RED = (20, 255, 255)
+LOWER_GREEN = (35, 100, 100)
+UPPER_GREEN = (77, 255, 255)
 
-# GPIO-Pin für den Servomotor
-Servo_PIN = 13
+# Initialisierung der GPIO-Pins
+def setup_gpio_pins():
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(SERVO_PIN, GPIO.OUT)
+    GPIO.setup(ULTRASONIC_TRIGGER_PIN, GPIO.OUT)
+    GPIO.setup(ULTRASONIC_ECHO_PIN, GPIO.IN)
+    GPIO.setup(RELAY_PIN, GPIO.OUT)
+    for pin in COLOR_SENSOR_PINS.values():
+        GPIO.setup(pin, GPIO.OUT)
 
-# Initialisieren der GPIO-Pins
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(Servo_PIN, GPIO.OUT)
+# Initialisierung des Servomotors
+def setup_servo():
+    p = GPIO.PWM(SERVO_PIN, 100)
+    p.start(2.5)
+    return p
 
-# Erstellen des PWM Objekt
-p= GPIO.PWM(Servo_PIN, 100)
-p.start(2.5)
-
-# Funktionen des Servomotors
-
-def block_turn(angle):
+# Servomotor-Funktionen
+def block_turn(p, angle):
     p.ChangeDutyCycle(angle)
 
-# Ab hier wird der Farbsensor programmiert
-
-# Zuordnung der GPIO Pins
-S0 = 17
-S1 = 27
-S2 = 22
-S3 = 23
-OUT = 24
-
-# Setzt die GPIO Pins als Ein- oder Ausgang
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(S0, GPIO.OUT)
-GPIO.setup(S1, GPIO.OUT)
-GPIO.setup(S2, GPIO.OUT)
-GPIO.setup(S3, GPIO.OUT)
-GPIO.setup(OUT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-# Setzt die Frequenz des Farbsensors
-# 0 = kein Filter, 1 = 2% Filter, 2 = 20% Filter, 3 = 100% Filter
+# Farbsensor-Funktionen
 def set_color(freq):
-    print('setColor')
-    if freq == 0:
-        GPIO.output(S2, False)
-        GPIO.output(S3, False)
-    elif freq == 1:
-        GPIO.output(S2, False)
-        GPIO.output(S3, True)
-    elif freq == 2:
-        GPIO.output(S2, True)
-        GPIO.output(S3, False)
-    elif freq == 3:
-        GPIO.output(S2, True)
-        GPIO.output(S3, True)
+    # Iteriere über die Farbsensor-Pins und die Zustände entsprechend der Frequenz
+    for pin, state in zip(COLOR_SENSOR_PINS.values(), COLOR_FREQUENCIES[freq]):
+        # Setze den Ausgangszustand des Pins entsprechend des gewünschten Frequenzbits
+        GPIO.output(pin, state)
 
-# Liest den Farbwert aus dem Sensor aus
+
 def read_color():
-    print('readColor')
     # Setzt die Frequenz auf rot
     set_color(0)
-
-    # Wartet 0,1 Sekunden, um die Messung zu stabilisieren
+    # Eine kurze Pause, um die Messung zu stabilisieren
     time.sleep(0.1)
-
-    # Liest den Farbwert aus dem Sensor aus
-    red = pulseIn(OUT, GPIO.LOW)
+    # Misst den Farbwert für Rot
+    red = pulse_in(COLOR_SENSOR_PINS['OUT'], GPIO.LOW)
 
     # Setzt die Frequenz auf grün
     set_color(1)
-
-    # Wartet 0,1 Sekunden, um die Messung zu stabilisieren
+    # Eine kurze Pause, um die Messung zu stabilisieren
     time.sleep(0.1)
-
-    # Liest den Farbwert aus dem Sensor aus
-    green = pulseIn(OUT, GPIO.LOW)
+    # Misst den Farbwert für Grün
+    green = pulse_in(COLOR_SENSOR_PINS['OUT'], GPIO.LOW)
 
     # Setzt die Frequenz auf blau
     set_color(2)
-
-    # Wartet 0,1 Sekunden, um die Messung zu stabilisieren
+    # Eine kurze Pause, um die Messung zu stabilisieren
     time.sleep(0.1)
+    # Misst den Farbwert für Blau
+    blue = pulse_in(COLOR_SENSOR_PINS['OUT'], GPIO.LOW)
 
-    # Liest den Farbwert aus dem Sensor aus
-    blue = pulseIn(OUT, GPIO.LOW)
+    # Gibt die Farbwerte für Rot, Grün und Blau als Tupel zurück
+    return red, green, blue
 
-    # Gibt den Farbwert als Tupel zurück
-    return (red, green, blue)
 
-# Liest den Puls von dem angegebenen Pin aus
-def pulseIn(pin, state):
-    print('pulse')
-    #while GPIO.input(pin) != state:
-    #    pass
-
+def pulse_in(pin, state):
+    # Startzeit erfassen
     start_time = time.time()
 
-    #while GPIO.input(pin) == state:
-    #    pass
+    # Warten, bis das Signal am Pin den gewünschten Zustand erreicht
+    while GPIO.input(pin) != state:
+        pass
 
+    # Warten, bis das Signal am Pin den Zustand ändert (andere Zustand als zuvor)
+    while GPIO.input(pin) == state:
+        pass
+
+    # Stopzeit erfassen
     stop_time = time.time()
-    print('BLIB')
 
+    # Berechnung der Dauer des Signals in Mikrosekunden und Rückgabe des Ergebnisses
     return (stop_time - start_time) * 1000000
-    
-# Ab hier wird der Ultraschallsensor programmiert
-
-# GPIO definieren (Modus, Pins, Output)
-GPIO.setmode(GPIO.BCM)
-GPIO_TRIGGER = 26
-GPIO_ECHO = 19
-GPIO.setup(GPIO_TRIGGER, GPIO.OUT)
-GPIO.setup(GPIO_ECHO, GPIO.IN)
 
 
-def entfernung():
-    # Trig High setzen
-    GPIO.output(GPIO_TRIGGER, True)
-
-    # Trig Low setzen (nach 0.01ms)
+# Ultraschallsensor-Funktionen
+def distance():
+    # Triggersignal senden
+    GPIO.output(ULTRASONIC_TRIGGER_PIN, True)
     time.sleep(0.00001)
-    GPIO.output(GPIO_TRIGGER, False)
+    GPIO.output(ULTRASONIC_TRIGGER_PIN, False)
 
-    Startzeit = time.time()
-    Endzeit = time.time()
+    # Start- und Endzeit initialisieren
+    start_time = time.time()
+    end_time = time.time()
 
-    # Start/Stop Zeit ermitteln
-    while GPIO.input(GPIO_ECHO) == 0:
-        Startzeit = time.time()
+    # Startzeit erfassen, wenn das Echosignal den Zustand 0 hat
+    while GPIO.input(ULTRASONIC_ECHO_PIN) == 0:
+        start_time = time.time()
 
-    while GPIO.input(GPIO_ECHO) == 1:
-        Endzeit = time.time()
+    # Endzeit erfassen, wenn das Echosignal den Zustand 1 hat
+    while GPIO.input(ULTRASONIC_ECHO_PIN) == 1:
+        end_time = time.time()
 
-    # Vergangene Zeit
-    Zeitdifferenz = Endzeit - Startzeit
-    # Schallgeschwindigkeit (34300 cm/s) einbeziehen
-    entfernung = (Zeitdifferenz * 34300) / 2
+    # Zeitdifferenz berechnen
+    time_diff = end_time - start_time
 
-    return entfernung
+    # Entfernung berechnen unter Berücksichtigung der Schallgeschwindigkeit
+    distance = (time_diff * 34300) / 2
 
-# Ab hier wird der DC Motor programmiert. Dieser ist an ein Relais angeschlossen
-relay_pin = 18
+    return distance
 
-# Initialisieren der GPIO-Pins
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(relay_pin, GPIO.OUT)
 
-# Funktion zum Schalten des Relais
+# Relais-Funktionen
 def toggle_relay():
-    GPIO.output(relay_pin, GPIO.HIGH)  # Relais einschalten
+    GPIO.output(RELAY_PIN, GPIO.HIGH)
 
-# Ab Hier beginnt der Part für die Webcam und die Farberkennung
-# Initialisiere die Webcam
-cam = cv2.VideoCapture(0)
-GPIO.setwarnings(False)
+# Webcam und Farberkennung
+def setup_webcam():
+    cam = cv2.VideoCapture(0)
+    return cam
 
 
-
-while True:
-    # Lese das aktuelle Bild von der Webcam ein
-    _, frame = cam.read()
-
-    toggle_relay()
-
-    if frame is None:
-        print("Error while reading frame from the webcam")
-        break
-    # Konvertiere das Bild in den HSV-Farbraum
+def detect_colors(frame):
+    # Konvertierung des Bildes in den HSV-Farbraum
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    # Definiere die Farbräume für Rot und Grün
-    lower_red = (0,100,100) # this range of hsv value for red color
-    upper_red = (20,255,255)
-    lower_green = (35,100,100) # this range of hsv value for green color
-    upper_green = (77,255,255)
+    # Erstellung einer Maske für rote Farben
+    mask_red = cv2.inRange(hsv, LOWER_RED, UPPER_RED)
 
-    # Erstelle Masken für Rot und Grün
-    mask_red = cv2.inRange(hsv, lower_red, upper_red)
-    mask_green = cv2.inRange(hsv, lower_green, upper_green)
+    # Erstellung einer Maske für grüne Farben
+    mask_green = cv2.inRange(hsv, LOWER_GREEN, UPPER_GREEN)
 
-    #Kontouren des Gesichts
+    # Konturen für rote Farben finden
     contours_red, _ = cv2.findContours(mask_red, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Konturen für grüne Farben finden
     contours_green, _ = cv2.findContours(mask_green, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Bitweise AND der Masken mit dem Originalbild, um die gewünschten Farben hervorzuheben
-    res_red = cv2.bitwise_and(frame, frame, mask=mask_red)
-    res_green = cv2.bitwise_and(frame, frame, mask=mask_green)
+    # Konturen für rote und grüne Farben zurückgeben
+    return contours_red, contours_green
 
-    # Split the image into left and right parts
+def distance():
+    # Trig-Pin auf HIGH setzen
+    GPIO.output(ULTRASONIC_TRIGGER_PIN, True)
+
+    # Eine kurze Pause einlegen
+    time.sleep(0.00001)
+
+    # Trig-Pin auf LOW setzen
+    GPIO.output(ULTRASONIC_TRIGGER_PIN, False)
+
+    # Start- und Stop-Zeitpunkte initialisieren
+    start_time = 0
+    stop_time = 0
+
+    # Startzeit erfassen
+    while GPIO.input(ULTRASONIC_ECHO_PIN) == 0:
+        start_time = time.time()
+
+    # Stopzeit erfassen
+    while GPIO.input(ULTRASONIC_ECHO_PIN) == 1:
+        stop_time = time.time()
+
+    # Zeitdifferenz berechnen
+    time_diff = stop_time - start_time
+
+    # Schallgeschwindigkeit (in cm/s) berücksichtigen und Entfernung berechnen
+    distance = (time_diff * 34300) / 2
+
+    return distance
+
+
+def process_contours(contours_red, contours_green):
+    # Webcam initialisieren
+    cam = setup_webcam()
+
+    # Einzelbild von der Webcam erfassen
+    ret, frame = cam.read()
+
+    # Servo initialisieren
+    p = setup_servo()
+
+    # Breite und Höhe des Frames erfassen
     frame_width = frame.shape[1]
-    frame_heigh = frame.shape[0]
+    frame_height = frame.shape[0]
 
+    # Viertel der Breite des Frames berechnen
     quarter_width = frame_width // 4
-    left_quartar_x = quarter_width
+
+    # x-Koordinaten für das linke und rechte Viertel berechnen
+    left_quarter_x = quarter_width
     right_quarter_x = frame_width - quarter_width
 
-    #Variable für die Ausgaben
-    result = 0
-
-    # Iterate through the contours of red
+    # Verarbeitung der roten Konturen
     for c in contours_red:
-        result = 0
-        # Get the bounding rectangle of the contour
         x, y, w, h = cv2.boundingRect(c)
-        # Get the center x-coordinate of the bounding rectangle
         contour_center_x = x + w // 2
-        # Check if the center x-coordinate of the bounding rectangle is on the right half of the frame
-        if x < left_quartar_x and entfernung() < 20:
-            block_turn(10)
-            time.sleep(1)
-            block_turn(5)
-            time.sleep(1)
-            block_turn(7.5)
-            break
 
-    # Iterate through the contours of green
-    for c in contours_green and entfernung() < 20:
-        result = 0
-        # Get the bounding rectangle of the contour
+        # Überprüfen, ob sich die Kontur im linken Viertel befindet und die Entfernung kleiner als 20 ist
+        if x < left_quarter_x and distance() < 20:
+            # Blockiere Drehung des Servos um 10 Grad
+            block_turn(p, 10)
+            time.sleep(1)
+
+            # Blockiere Drehung des Servos um 5 Grad
+            block_turn(p, 5)
+            time.sleep(1)
+
+            # Blockiere Drehung des Servos um 7,5 Grad
+            block_turn(p, 7.5)
+
+            return 0
+
+    # Verarbeitung der grünen Konturen
+    for c in contours_green:
         x, y, w, h = cv2.boundingRect(c)
-        # Get the center x-coordinate of the bounding rectangle
         contour_center_x = x + w // 2
-        # Check if the center x-coordinate of the bounding rectangle is on the left half of the frame
-        if x > right_quarter_x:
-            block_turn(5)
-            time.sleep(1)
-            block_turn(10)
-            time.sleep(1)
-            block_turn(7.5)
-            break
-    print(result)
 
+        # Überprüfen, ob sich die Kontur im rechten Viertel befindet und die Entfernung kleiner als 20 ist
+        if x > right_quarter_x and distance() < 20:
+            # Blockiere Drehung des Servos um 5 Grad
+            block_turn(p, 5)
+            time.sleep(1)
+
+            # Blockiere Drehung des Servos um 10 Grad
+            block_turn(p, 10)
+            time.sleep(1)
+
+            # Blockiere Drehung des Servos um 7,5 Grad
+            block_turn(p, 7.5)
+
+            return 0
+
+    # Farbwerte lesen
     red, green, blue = read_color()
 
-    # Prüfe, ob die erkannte Farbe Blau ist
+    # Überprüfen der Farbwerte
     if blue > red and blue > green:
-        # Führe die Aktion für Blau aus
-        block_turn(5)
+        # Blockiere Drehung des Servos um 5 Grad
+        block_turn(p, 5)
         time.sleep(2)
-        block_turn(7.5)
 
-        # Prüfe, ob die erkannte Farbe Orange ist
-    if red > blue and red > green:
-        # Führe die Aktion für Orange aus
-        block_turn(10)
+        # Blockiere Drehung des Servos um 7,5 Grad
+        block_turn(p, 7.5)
+    elif red > blue and red > green:
+        # Blockiere Drehung des Servos um 10 Grad
+        block_turn(p, 10)
         time.sleep(2)
-        block_turn(7.5)
 
-    # Kontouren in den Originalen Frame einfügen
-    for c in contours_red:
-        cv2.drawContours(frame, [c], -1, (0,0,255), 2)
-    for c in contours_green:
-        cv2.drawContours(frame, [c], -1, (0,255,0), 2)
+        # Blockiere Drehung des Servos um 7,5 Grad
+        block_turn(p, 7.5)
 
-    # Zeige das Ergebnis auf dem Bildschirm an
-    cv2.imshow("Original", frame)
-    cv2.imshow("Rot", res_red)
-    cv2.imshow("Gruen", res_green)
-
-    # Warte auf Taste 'q', um das Programm zu beenden
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+    return 0
 
 
-    time.sleep(0.1)
+def main():
+    # GPIO-Pins einrichten
+    setup_gpio_pins()
+
+    # Servo initialisieren
+    p = setup_servo()
+
+    # Webcam initialisieren
+    cam = setup_webcam()
+
+    while True:
+        # Einzelbild von der Webcam erfassen
+        _, frame = cam.read()
+
+        # Relais umschalten
+        toggle_relay()
+
+        if frame is None:
+            print("Fehler beim Lesen des Frames von der Webcam")
+            break
+
+        # Farbkonturen erkennen
+        contours_red, contours_green = detect_colors(frame)
+
+        # Konturen verarbeiten
+        result = process_contours(contours_red, contours_green)
+
+        # Originalbild anzeigen
+        cv2.imshow("Original", frame)
+
+        # Auf Tastendruck 'q' beenden
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+        # Kurze Pause
+        time.sleep(0.1)
+
+    # Webcam freigeben
+    cam.release()
+
+    # OpenCV-Fenster schließen
+    cv2.destroyAllWindows()
+
+    # Servo stoppen
+    p.stop()
+
+    # GPIO bereinigen
+    GPIO.cleanup()
 
 
-# Freigabe der Ressourcen
-cam.release()
-cv2.destroyAllWindows()
-p.stop()
-GPIO.cleanup()
+if __name__ == '__main__':
+    main()
