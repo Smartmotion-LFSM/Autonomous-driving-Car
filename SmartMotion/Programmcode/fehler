@@ -6,3 +6,6 @@ Traceback (most recent call last):
   File "/home/smartmotion/Downloads/test.py", line 202, in process_contours
     frame_height, frame_width = frame.shape[:2]
 AttributeError: 'NoneType' object has no attribute 'shape'
+
+sudo apt install gstreamer1.0-tools gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly
+
