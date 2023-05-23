@@ -1,14 +1,10 @@
 Traceback (most recent call last):
-  File "/home/smartmotion/Downloads/asyncmain.py", line 325, in <module>
-    asyncio.run(main())
-  File "/usr/lib/python3.9/asyncio/runners.py", line 44, in run
-    return loop.run_until_complete(main)
-  File "/usr/lib/python3.9/asyncio/base_events.py", line 642, in run_until_complete
-    return future.result()
-  File "/home/smartmotion/Downloads/asyncmain.py", line 299, in main
+  File "/home/smartmotion/Downloads/test.py", line 325, in <module>
+    main()
+  File "/home/smartmotion/Downloads/test.py", line 299, in main
     result = process_contours(frame, contours_red, contours_green, required_pixel_count=100)
-  File "/home/smartmotion/Downloads/asyncmain.py", line 199, in process_contours
+  File "/home/smartmotion/Downloads/test.py", line 199, in process_contours
     p = setup_servo()
-  File "/home/smartmotion/Downloads/asyncmain.py", line 45, in setup_servo
+  File "/home/smartmotion/Downloads/test.py", line 44, in setup_servo
     p = GPIO.PWM(SERVO_PIN, 100)
 RuntimeError: A PWM object already exists for this GPIO channel
