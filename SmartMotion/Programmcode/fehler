@@ -1,4 +1,4 @@
 Traceback (most recent call last):
-  File "/home/smartmotion/Desktop/main.py", line 199, in <module>
-    if any([x < quarter_width for x, _, _, _ in cv2.boundingRect(contours) for contours in red_contours]) and distance < 30:
-NameError: name 'contours' is not defined
+  File "/home/smartmotion/Desktop/contur.py", line 199, in <module>
+    if any([x < quarter_width for x, _, _, _ in cv2.boundingRect(red_contours) for contour in red_contours]) and distance < 30:
+TypeError: Expected Ptr<cv::UMat> for argument 'array'
