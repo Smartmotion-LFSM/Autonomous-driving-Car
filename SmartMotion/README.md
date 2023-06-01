@@ -40,6 +40,10 @@ Aufteilung
 
 Damit eine Projektarbeit funktioniert, muss diese natürlich aufgeteilt werden. Wir haben uns dazu entschieden, dass Malte sich insbesondere auf die Programmierung und die damit verbundene Sensorik konzentriert. Jonas übernimmt schwerpunktmäßig den 3D Druck der Karosserie sowie das Github-Repository und die Verkabelung einzelner Sensormodule. Allerdings sollte hier erwähnt werden, dass das keine starre Zuordnung ist und die Übergänge im Rahmen der Teamarbeit natürlich fließend sind. 
 
+Probleme:
+Zwischendurch entstanden immer wieder erneut Probleme, die vorallem die Lieferzeiten einiger Hardware betrafen. Bugs in der Software konnten jederzeit behoben werden, auch wenn dies etwas Zeit erforderte. Womit keiner von uns beiden rechnen konnte war, dass uns genau am 01.06, zwei Tage vor dem Wettberwerb, ein entscheidener Teil unserer Hardware durch einen Kurzschluss durchgebrannt ist (Farbsensor TCS3200). Da es nicht mehr möglich ist, dieses Teil in Kürze erneut zu kaufen, mussten wir kurzerhand unsere Strategie umdenken und leider den Kompromisseingehen, die Kamera statt für die Objekterkennung auf die Farberkennung des Bodens zu verwenden.
+
 Danksagung
 
 Zum Abschluss bedanken wir uns herzlich bei Herrn Kaiser und Herrn Tohang für die Möglichkeit am Projektkurs teilnehmen zu können und dafür bis 16 Uhr in der Schule verbleiben zu dürfen. Ein weiterer Dank geht an dieser Stelle an die WRO, die ein solches Projekt für Schüler anbietet.
+Weiteres Lob geht an Herr Zanders, welcher sich bereit erklärte uns Schüler während seiner Stunde an unserem Projekt weiterarbeiten zu lassen.
