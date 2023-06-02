@@ -6,7 +6,7 @@ from time import sleep
 # GPIO-Pins für den Servomotor und das Relais
 servo_pin = 18
 relay_pin = 26
-button_pin = 17
+button_pin = 16
 
 # Farbbereiche für Blau und Orange
 blue_lower = (100, 0, 0)
