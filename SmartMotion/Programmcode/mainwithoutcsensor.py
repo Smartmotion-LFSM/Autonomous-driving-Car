@@ -55,6 +55,7 @@ try:
     while True:
         if GPIO.input(button_pin) == GPIO.LOW:
             button_pressed = True
+            GPIO.output(relay_pin, GPIO.HIGH)
 
         if button_pressed:
             # Erfasse ein Bild von der Kamera
